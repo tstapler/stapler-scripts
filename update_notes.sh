@@ -40,20 +40,27 @@ shift $(($OPTIND-1))
 
 GLOB="${1:-CPRE}" 
 
+TARGET=\*"${GLOB}"\*
+
+echo "Inflating notes in zips"
+
 # Unzip and flatten zipfile
-find . -maxdepth 1 -iname \*"${GLOB}"\*.zip \
+find . -maxdepth 1 -iname $TARGET.zip \
   -exec unzip -jn {} \; \
   -exec rm -f {} \; 
 
+echo "OCRing Notes without text"
+
 # OCR Files without orc
-find . -maxdepth 1 -iname \*"${GLOB}"\*.pdf |  while read OLD_FILE; do
+find . -maxdepth 1 -iname $TARGET.pdf |  while read OLD_FILE; do
   if [ $(pdffonts "$OLD_FILE" | wc -l) -eq 2 ]; then 
     NEW_FILE=$(sed "s/.pdf/_ocr.pdf/" <<< "$OLD_FILE")
-    git annex unannex "$OLD_FILE"
     pypdfocr "$OLD_FILE"
     mv "$NEW_FILE" "$OLD_FILE"
   fi
 done
   
+echo "Adding notes to git annex"
+
 # Add notes that aren't in git annex
-find . -maxdepth 1 -type f -iname \*"${GLOB}"\*.pdf | xargs -r git annex add
+find . -maxdepth 1 -type f -name $TARGET.pdf | xargs -r git annex add
