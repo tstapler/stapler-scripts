@@ -40,15 +40,23 @@ shift $(($OPTIND-1))
 
 GLOB="${1:-CPRE}" 
 
+<<<<<<< HEAD
 TEMP_FOLDER=temp
+TARGET=\*"${GLOB}"\*
 
 # Unzip and flatten zipfile
-find . -maxdepth 1 -iname \*"${GLOB}"\*.zip \
+
+echo "Inflating notes in zips"
+
+# Unzip and flatten zipfile
+find . -maxdepth 1 -iname $TARGET.zip \
   -exec unzip -jn {} -d $TEMP_FOLDER \; \
   -exec rm -f {} \; 
 
+echo "OCRing Notes without text"
+
 # OCR Files without orc
-find "$TEMP_FOLDER" -maxdepth 1 -iname \*"${GLOB}"\*.pdf |  while read OLD_FILE; do
+find $TEMP_FOLDER -maxdepth 1 -iname $TARGET.pdf |  while read OLD_FILE; do
 if  pdf_has_ocr "$OLD_FILE" && [ ! -f $(basename "$OLD_FILE") ]; then
   NEW_FILE=$(sed "s/.pdf/_ocr.pdf/" <<< "$OLD_FILE")
   git annex unannex "$OLD_FILE"
@@ -57,7 +65,9 @@ if  pdf_has_ocr "$OLD_FILE" && [ ! -f $(basename "$OLD_FILE") ]; then
 fi
 done
   
+echo "Adding notes to git annex"
+
 # Add notes that aren't in git annex
-find . -maxdepth 1 -type f -iname \*"${GLOB}"\*.pdf | xargs -r git annex add
+find . -maxdepth 1 -type f -name $TARGET.pdf | xargs -r git annex add
 
 rm -rf $TEMP_FOLDER
