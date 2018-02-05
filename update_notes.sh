@@ -38,36 +38,41 @@ do
 done
 shift $(($OPTIND-1))
 
-GLOB="${1:-CPRE}" 
-
-<<<<<<< HEAD
+GLOB="${1:-CPRE}"
 TEMP_FOLDER=temp
-TARGET=\*"${GLOB}"\*
+
 
 # Unzip and flatten zipfile
 
 echo "Inflating notes in zips"
 
 # Unzip and flatten zipfile
-find . -maxdepth 1 -iname $TARGET.zip \
+find . -maxdepth 1 -iname \*$GLOB\*.zip \
   -exec unzip -jn {} -d $TEMP_FOLDER \; \
   -exec rm -f {} \; 
 
 echo "OCRing Notes without text"
 
 # OCR Files without orc
-find $TEMP_FOLDER -maxdepth 1 -iname $TARGET.pdf |  while read OLD_FILE; do
-if  pdf_has_ocr "$OLD_FILE" && [ ! -f $(basename "$OLD_FILE") ]; then
-  NEW_FILE=$(sed "s/.pdf/_ocr.pdf/" <<< "$OLD_FILE")
-  git annex unannex "$OLD_FILE"
-  pypdfocr "$OLD_FILE"
-  mv "$TEMP_FOLDER/$NEW_FILE" "$(basename $OLD_FILE)"
+find $TEMP_FOLDER -maxdepth 1 -iname \*$GLOB\*.pdf |  while read TEMP_FILE; do
+
+PERM_FILE=$(basename "$TEMP_FILE") 
+
+if [ ! -f PERM_FILE ]; then
+  if  pdf_has_ocr "$TEMP_FILE"; then
+    NEW_FILE=$(sed "s/.pdf/_ocr.pdf/" <<< "$TEMP_FILE")
+    git annex unannex "$TEMP_FILE"
+    pypdfocr "$TEMP_FILE"
+    mv "$TEMP_FOLDER/$NEW_FILE" "$PERM_FILE"
+  else
+    mv "$TEMP_FILE" "$PERM_FILE"
+  fi
 fi
 done
   
 echo "Adding notes to git annex"
 
 # Add notes that aren't in git annex
-find . -maxdepth 1 -type f -name $TARGET.pdf | xargs -r git annex add
+find . -maxdepth 1 -type f -name \*$GLOB\*.pdf | xargs -r git annex add
 
 rm -rf $TEMP_FOLDER
